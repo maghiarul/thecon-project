@@ -7,7 +7,7 @@ import { useThemeColor } from '@/hooks/use-theme-color';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -43,6 +43,7 @@ export default function HomeScreen() {
           style={styles.headerGradient}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
+          locations={[0, 1]}
         />
       }>
       <ThemedView style={styles.welcomeContainer}>
@@ -82,13 +83,21 @@ export default function HomeScreen() {
         </ThemedText>
       </ThemedView>
 
-      {featuredLocations.map((location) => (
-        <LocationCard
-          key={location.id}
-          location={location}
-          onPress={() => handleLocationPress(location.id)}
-        />
-      ))}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.cardsScroll}
+      >
+        {featuredLocations.map((location) => (
+          <LocationCard
+            key={location.id}
+            location={location}
+            onPress={() => handleLocationPress(location.id)}
+            variant="compact"
+            style={{ width: 160, marginRight: 12, minWidth: 0, maxWidth: '100%' }}
+          />
+        ))}
+      </ScrollView>
 
       <ThemedView style={styles.ctaContainer}>
         <Pressable
@@ -161,6 +170,10 @@ const styles = StyleSheet.create({
   },
   sectionDescription: {
     fontSize: 14,
+  },
+  cardsScroll: {
+    paddingHorizontal: 16,
+    paddingBottom: 8,
   },
   ctaContainer: {
     gap: 12,

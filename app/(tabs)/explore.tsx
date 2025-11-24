@@ -8,7 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ExpoLocation from 'expo-location';
 import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { Alert, FlatList, Keyboard, Modal, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { Alert, FlatList, Keyboard, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps';
 
 type ViewMode = 'map' | 'list';
@@ -18,7 +18,6 @@ export default function ExploreScreen() {
   const [viewMode, setViewMode] = useState<ViewMode>('map');
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<FilterType>('all');
-  const [showFilterModal, setShowFilterModal] = useState(false);
   const [showSearchResults, setShowSearchResults] = useState(false);
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const mapRef = useRef<MapView>(null);
@@ -136,8 +135,8 @@ export default function ExploreScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <View style={[styles.searchHeader, { backgroundColor }]}>
-        <View style={[styles.searchBar, { backgroundColor: `${borderColor}10`, borderColor: `${borderColor}20` }]}>
+      <View style={[styles.headerContainer, { backgroundColor }]}>
+        <View style={[styles.searchBar, { backgroundColor: `${borderColor}08`, borderColor: `${borderColor}15` }]}>
           <Ionicons name="search" size={20} color={`${borderColor}60`} />
           <TextInput
             style={[styles.searchInput, { color: borderColor }]}
@@ -154,16 +153,42 @@ export default function ExploreScreen() {
           )}
         </View>
         
-        <Pressable
-          style={[styles.filterButton, { backgroundColor: filterType !== 'all' ? tintColor : `${borderColor}10` }]}
-          onPress={() => setShowFilterModal(true)}
+        <ScrollView 
+          horizontal 
+          showsHorizontalScrollIndicator={false} 
+          contentContainerStyle={styles.filterContainer}
         >
-          <Ionicons 
-            name="options" 
-            size={22} 
-            color={filterType !== 'all' ? '#fff' : borderColor} 
-          />
-        </Pressable>
+          {[
+            { value: 'all', label: 'Toate', icon: 'apps' },
+            { value: 'cafe', label: 'Cafenele', icon: 'cafe' },
+            { value: 'restaurant', label: 'Restaurante', icon: 'restaurant' },
+          ].map((filter) => (
+            <Pressable
+              key={filter.value}
+              style={[
+                styles.filterChip,
+                filterType === filter.value 
+                  ? { backgroundColor: tintColor, borderColor: tintColor } 
+                  : { backgroundColor: 'transparent', borderColor: `${borderColor}20` }
+              ]}
+              onPress={() => setFilterType(filter.value as FilterType)}
+            >
+              <Ionicons 
+                name={filter.icon as any} 
+                size={16} 
+                color={filterType === filter.value ? '#fff' : borderColor} 
+              />
+              <ThemedText 
+                style={[
+                  styles.filterLabel, 
+                  { color: filterType === filter.value ? '#fff' : borderColor }
+                ]}
+              >
+                {filter.label}
+              </ThemedText>
+            </Pressable>
+          ))}
+        </ScrollView>
       </View>
 
       {showSearchResults && searchQuery.length > 0 && filteredLocations.length > 0 && (
@@ -237,10 +262,10 @@ export default function ExploreScreen() {
               { 
                 backgroundColor: tintColor,
                 shadowColor: '#000',
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.25,
-                shadowRadius: 4,
-                elevation: 5,
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.3,
+                shadowRadius: 8,
+                elevation: 6,
               },
               pressed && styles.togglePressed,
             ]}
@@ -248,8 +273,8 @@ export default function ExploreScreen() {
           >
             <Ionicons
               name="list"
-              size={26}
-              color="#000"
+              size={24}
+              color="#fff"
             />
           </Pressable>
         </>
@@ -258,11 +283,15 @@ export default function ExploreScreen() {
           <FlatList
             data={filteredLocations}
             keyExtractor={(item) => item.id}
+            numColumns={2}
+            columnWrapperStyle={styles.listColumnWrapper}
+            key="grid-2"
             renderItem={({ item }) => (
               <LocationCard
                 location={item}
                 onPress={() => handleLocationPress(item)}
                 distance={item.distance}
+                variant="compact"
               />
             )}
             contentContainerStyle={styles.list}
@@ -275,10 +304,10 @@ export default function ExploreScreen() {
               { 
                 backgroundColor: tintColor,
                 shadowColor: '#000',
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.25,
-                shadowRadius: 4,
-                elevation: 5,
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.3,
+                shadowRadius: 8,
+                elevation: 6,
               },
               pressed && styles.togglePressed,
             ]}
@@ -286,48 +315,12 @@ export default function ExploreScreen() {
           >
             <Ionicons
               name="map"
-              size={26}
-              color="#000"
+              size={24}
+              color="#fff"
             />
           </Pressable>
         </>
       )}
-
-      <Modal
-        visible={showFilterModal}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowFilterModal(false)}
-      >
-        <Pressable style={styles.modalOverlay} onPress={() => setShowFilterModal(false)}>
-          <View style={[styles.filterModal, { backgroundColor }]} onStartShouldSetResponder={() => true}>
-            <ThemedText type="subtitle" style={styles.filterTitle}>Filtrează după tip</ThemedText>
-            
-            {[
-              { value: 'all', label: 'Toate', icon: 'apps' },
-              { value: 'cafe', label: 'Cafenele', icon: 'cafe' },
-              { value: 'restaurant', label: 'Restaurante', icon: 'restaurant' },
-            ].map((filter) => (
-              <Pressable
-                key={filter.value}
-                style={[
-                  styles.filterOption,
-                  { borderColor: `${borderColor}20` },
-                  filterType === filter.value && { backgroundColor: `${tintColor}20`, borderColor: tintColor }
-                ]}
-                onPress={() => {
-                  setFilterType(filter.value as FilterType);
-                  setShowFilterModal(false);
-                }}
-              >
-                <Ionicons name={filter.icon as any} size={24} color={filterType === filter.value ? tintColor : borderColor} />
-                <ThemedText style={styles.filterLabel}>{filter.label}</ThemedText>
-                {filterType === filter.value && <Ionicons name="checkmark" size={24} color={tintColor} />}
-              </Pressable>
-            ))}
-          </View>
-        </Pressable>
-      </Modal>
     </ThemedView>
   );
 }
@@ -336,41 +329,51 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  searchHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 16,
+  headerContainer: {
     paddingTop: 60,
     paddingBottom: 12,
     zIndex: 1,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0,0,0,0.05)',
   },
   searchBar: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderRadius: 12,
+    gap: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 16,
     borderWidth: 1,
+    marginHorizontal: 16,
+    marginBottom: 12,
   },
   searchInput: {
     flex: 1,
     fontSize: 16,
     padding: 0,
   },
-  filterButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
+  filterContainer: {
+    paddingHorizontal: 16,
+    gap: 8,
+    paddingBottom: 4,
+  },
+  filterChip: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    gap: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  filterLabel: {
+    fontSize: 14,
+    fontWeight: '600',
   },
   toggleButton: {
     position: 'absolute',
-    top: 130,
-    right: 16,
+    bottom: 110,
+    right: 20,
     width: 56,
     height: 56,
     borderRadius: 28,
@@ -379,54 +382,32 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   togglePressed: {
-    opacity: 0.8,
+    opacity: 0.9,
+    transform: [{ scale: 0.95 }],
   },
   map: {
     flex: 1,
   },
   list: {
     paddingVertical: 8,
+    paddingHorizontal: 16,
     paddingBottom: 100,
   },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  filterModal: {
-    width: '80%',
-    borderRadius: 16,
-    padding: 20,
-    gap: 12,
-  },
-  filterTitle: {
-    marginBottom: 8,
-  },
-  filterOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 2,
-  },
-  filterLabel: {
-    flex: 1,
-    fontSize: 16,
+  listColumnWrapper: {
+    justifyContent: 'space-between',
   },
   searchResults: {
     position: 'absolute',
-    top: 120,
+    top: 130,
     left: 16,
     right: 16,
     maxHeight: 300,
-    borderRadius: 12,
+    borderRadius: 16,
     borderWidth: 1,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
     elevation: 5,
     zIndex: 100,
   },
@@ -439,7 +420,7 @@ const styles = StyleSheet.create({
     borderBottomColor: 'rgba(0,0,0,0.05)',
   },
   searchResultPressed: {
-    opacity: 0.7,
+    backgroundColor: 'rgba(0,0,0,0.02)',
   },
   searchResultLeft: {
     flexDirection: 'row',

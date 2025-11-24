@@ -7,6 +7,7 @@ import { generateVibeDescription } from '@/services/ai-service';
 import { openWhatsAppChat } from '@/utils/whatsapp-linking';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
@@ -69,65 +70,77 @@ export default function LocationDetailsScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <View style={styles.topButtons}>
-        <Pressable style={styles.closeButton} onPress={() => router.back()}>
-          <View style={[styles.closeButtonInner, { backgroundColor }]}>
-            <Ionicons name="close" size={28} color={tintColor} />
-          </View>
-        </Pressable>
-        <Pressable 
-          style={styles.favoriteButton} 
-          onPress={() => toggleFavorite(location.id)}
-        >
-          <View style={[styles.favoriteButtonInner, { backgroundColor }]}>
-            <Ionicons 
-              name={locationIsFavorite ? "heart" : "heart-outline"} 
-              size={26} 
-              color={locationIsFavorite ? "#FF3B30" : tintColor} 
-            />
-          </View>
-        </Pressable>
-      </View>
-
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <View style={styles.imageContainer}>
         <Image
           source={{ uri: location.imageUrl }}
           style={styles.image}
           contentFit="cover"
         />
+        <LinearGradient
+          colors={['rgba(0,0,0,0.6)', 'transparent', 'transparent', 'rgba(0,0,0,0.3)']}
+          style={styles.gradient}
+          locations={[0, 0.3, 0.7, 1]}
+        />
+        <View style={styles.topButtons}>
+          <Pressable 
+            style={styles.iconButton} 
+            onPress={() => toggleFavorite(location.id)}
+          >
+            <Ionicons 
+              name={locationIsFavorite ? "heart" : "heart-outline"} 
+              size={24} 
+              color={locationIsFavorite ? "#FF3B30" : "#fff"} 
+            />
+          </Pressable>
+        </View>
+      </View>
 
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         <View style={styles.content}>
           <View style={styles.header}>
             <View style={styles.titleRow}>
               <ThemedText type="title" style={styles.title}>
                 {location.name}
               </ThemedText>
-              <View style={styles.rating}>
-                <Ionicons name="star" size={20} color="#FFB800" />
+              <View style={styles.ratingBadge}>
+                <Ionicons name="star" size={16} color="#fff" />
                 <ThemedText style={styles.ratingText}>{location.rating}</ThemedText>
               </View>
             </View>
             
             <View style={styles.addressRow}>
-              <Ionicons name="location" size={18} color={tintColor} />
+              <Ionicons name="location-outline" size={18} color={tintColor} />
               <ThemedText style={styles.address}>{location.address}</ThemedText>
             </View>
 
-            <View style={styles.typeTag}>
-              <ThemedText style={styles.typeText}>
-                {location.type === 'cafe' ? '☕ Cafenea' : '🍽️ Restaurant'}
-              </ThemedText>
+            <View style={styles.tagsRow}>
+              <View style={[styles.tag, { backgroundColor: `${tintColor}15` }]}>
+                <ThemedText style={[styles.tagText, { color: tintColor }]}>
+                  {location.type === 'cafe' ? '☕ Cafenea' : '🍽️ Restaurant'}
+                </ThemedText>
+              </View>
+              <View style={[styles.tag, { backgroundColor: '#FFB80015' }]}>
+                <ThemedText style={[styles.tagText, { color: '#FFB800' }]}>
+                  Popular
+                </ThemedText>
+              </View>
             </View>
           </View>
 
-          <View style={[styles.descriptionCard, { backgroundColor, borderColor: `${borderColor}20` }]}>
+          <View style={[styles.descriptionCard, { backgroundColor, borderColor: `${borderColor}10` }]}>
             <View style={styles.descriptionHeader}>
-              <ThemedText type="subtitle">Descriere</ThemedText>
+              <ThemedText type="subtitle">Despre locație</ThemedText>
               {currentDescription && (
-                <View style={styles.aiBadge}>
-                  <Ionicons name="sparkles" size={14} color="#FFB800" />
-                  <ThemedText style={styles.aiBadgeText}>AI Generated</ThemedText>
-                </View>
+                <LinearGradient
+                  colors={['#FFB800', '#FF8A00']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.aiBadge}
+                  locations={[0, 1]}
+                >
+                  <Ionicons name="sparkles" size={12} color="#fff" />
+                  <ThemedText style={styles.aiBadgeText}>AI Vibe</ThemedText>
+                </LinearGradient>
               )}
             </View>
             <ThemedText style={styles.description}>{displayDescription}</ThemedText>
@@ -136,7 +149,7 @@ export default function LocationDetailsScreen() {
           <Pressable
             style={({ pressed }) => [
               styles.vibeButton,
-              { backgroundColor: `${tintColor}20`, borderColor: tintColor },
+              { borderColor: tintColor },
               pressed && styles.buttonPressed,
               isGenerating && styles.buttonDisabled,
             ]}
@@ -152,27 +165,28 @@ export default function LocationDetailsScreen() {
               </>
             ) : (
               <>
-                <Ionicons name="sparkles" size={20} color={tintColor} />
+                <Ionicons name="sparkles-outline" size={20} color={tintColor} />
                 <ThemedText style={[styles.vibeButtonText, { color: tintColor }]}>
-                  Generează Descriere Vibe
+                  Generează Vibe cu AI
                 </ThemedText>
               </>
             )}
           </Pressable>
-
-          <Pressable
-            style={({ pressed }) => [
-              styles.reserveButton,
-              { backgroundColor: '#25D366' },
-              pressed && styles.buttonPressed,
-            ]}
-            onPress={handleReserve}
-          >
-            <Ionicons name="logo-whatsapp" size={24} color="#fff" />
-            <ThemedText style={styles.reserveButtonText}>Rezervă</ThemedText>
-          </Pressable>
         </View>
       </ScrollView>
+
+      <View style={[styles.footer, { backgroundColor, borderTopColor: `${borderColor}10` }]}>
+        <Pressable
+          style={({ pressed }) => [
+            styles.reserveButton,
+            pressed && styles.buttonPressed,
+          ]}
+          onPress={handleReserve}
+        >
+          <Ionicons name="logo-whatsapp" size={24} color="#fff" />
+          <ThemedText style={styles.reserveButtonText}>Rezervă pe WhatsApp</ThemedText>
+        </Pressable>
+      </View>
     </ThemedView>
   );
 }
@@ -181,51 +195,47 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  topButtons: {
-    position: 'absolute',
-    top: 50,
-    left: 16,
-    right: 16,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    zIndex: 10,
-  },
-  closeButton: {
-    zIndex: 10,
-  },
-  closeButtonInner: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
-  },
-  favoriteButton: {
-    zIndex: 10,
-  },
-  favoriteButtonInner: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
+  imageContainer: {
+    height: 300,
+    width: '100%',
+    position: 'relative',
   },
   image: {
     width: '100%',
-    height: 320,
+    height: '100%',
+  },
+  gradient: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+  },
+  topButtons: {
+    position: 'absolute',
+    top: 20,
+    right: 20,
+    zIndex: 10,
+  },
+  iconButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backdropFilter: 'blur(10px)',
+  },
+  scrollContent: {
+    paddingBottom: 100,
   },
   content: {
-    padding: 20,
+    padding: 24,
+    paddingTop: 32,
+    marginTop: -20,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    backgroundColor: 'inherit', // Will inherit from ThemedView container if set, but here we rely on the view below
   },
   header: {
     marginBottom: 24,
@@ -234,48 +244,57 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 12,
+    marginBottom: 8,
     gap: 12,
   },
   title: {
     flex: 1,
+    fontSize: 24,
+    fontWeight: 'bold',
   },
-  rating: {
+  ratingBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
+    backgroundColor: '#FFB800',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 12,
   },
   ratingText: {
-    fontSize: 18,
-    fontWeight: '700',
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 14,
   },
   addressRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    marginBottom: 12,
+    marginBottom: 16,
+    opacity: 0.7,
   },
   address: {
     fontSize: 15,
-    opacity: 0.7,
     flex: 1,
   },
-  typeTag: {
-    alignSelf: 'flex-start',
+  tagsRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  tag: {
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 8,
-    backgroundColor: '#00000010',
   },
-  typeText: {
-    fontSize: 14,
+  tagText: {
+    fontSize: 13,
     fontWeight: '600',
   },
   descriptionCard: {
-    padding: 16,
-    borderRadius: 16,
+    padding: 20,
+    borderRadius: 20,
     borderWidth: 1,
-    marginBottom: 16,
+    marginBottom: 20,
   },
   descriptionHeader: {
     flexDirection: 'row',
@@ -287,20 +306,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    paddingHorizontal: 8,
+    paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 6,
-    backgroundColor: '#FFB80020',
+    borderRadius: 12,
   },
   aiBadgeText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#FFB800',
+    fontSize: 11,
+    fontWeight: 'bold',
+    color: '#fff',
   },
   description: {
     fontSize: 15,
-    lineHeight: 22,
-    opacity: 0.85,
+    lineHeight: 24,
+    opacity: 0.8,
   },
   vibeButton: {
     flexDirection: 'row',
@@ -308,29 +326,45 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
     padding: 16,
-    borderRadius: 12,
-    borderWidth: 2,
-    marginBottom: 12,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderStyle: 'dashed',
   },
   vibeButtonText: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
+  },
+  footer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: 20,
+    paddingBottom: 34,
+    borderTopWidth: 1,
   },
   reserveButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    padding: 16,
-    borderRadius: 12,
+    padding: 18,
+    borderRadius: 16,
+    backgroundColor: '#25D366',
+    shadowColor: '#25D366',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
   reserveButtonText: {
     color: '#fff',
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   buttonPressed: {
-    opacity: 0.8,
+    opacity: 0.9,
+    transform: [{ scale: 0.98 }],
   },
   buttonDisabled: {
     opacity: 0.5,
