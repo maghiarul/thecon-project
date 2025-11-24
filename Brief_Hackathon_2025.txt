@@ -1,0 +1,202 @@
+1. Tema Hackathon
+Construiți o aplicație mobilă de turism simplă, dar foarte bine finisată.
+●​ NU vrem o aplicație cu 100 de funcții neterminate.
+●​ VREM o aplicație cu funcțiile de bază perfecte și, dacă timpul permite, funcționalități
+"Nice to Have" complexe.
+Context: Sunteți developeri care folosiți AI ca un "Exoschelet". Arătați-ne cât de repede puteți
+asambla o interfață de calitate și logică complexă folosind Claude, Cursor, Gemini, ChatGPT
+sau ce tool AI doriți.
+
+💡 PRO TIP: Majoritatea uneltelor AI au pachete GRATUITE sau extinse pentru
+studenți. :
+
+●​ Gemini for Students
+●​ Cursor for Students
+●​ Claude Campus Program
+
+2. Core Features (Obligatorii - Baza Notei)
+
+🗺️ 1. Harta și Lista (The Feed)
+
+●​ Data Source: Aplicația trebuie să încarce un fișier JSON cu locații
+(Cafenele/Restaurante) care conține: Nume, Adresă, Coordonate (Lat/Long), Poză
+(URL), Descriere scurtă, Rating. O să puteți descărca acest JSON de pe
+https://thecon.ro/hackathon/
+●​ Dual View: Utilizatorul trebuie să poată vedea locațiile în două moduri:
+1.​ Map View: Pin-uri pe o hartă.
+■​ Libertate: Puteți folosi orice provider de hărți (Google Maps, Apple Maps,
+Mapbox).
+■​ Recomandare: OpenStreetMap (via react-native-maps cu URL tiles) este
+cea mai sigură variantă pentru a nu vă bloca în configurări de API Keys și
+Billing Accounts la Google.
+2.​ List View: O listă scrollabilă cu card-uri elegante (Imagine + Titlu + Rating).
+
+👆 2. Structură, Meniu și Detalii (The Interaction)
+
+●​ Meniu Principal: Aplicația trebuie să aibă o structură clară, folosind un Bottom Tab Bar
+(meniu fix jos) cu minim 2 butoane:
+1.​ Explore: Ecranul principal cu Harta/Lista.
+2.​ Profil: Un ecran simplu (poate fi static) cu o poză și un nume, doar pentru a
+demonstra funcționarea meniului.
+
+●​ Navigație Fluidă: Când utilizatorul dă tap pe un Pin de pe hartă sau pe un Card din
+listă, meniul trebuie să permită navigarea către un ecran de Detalii locație
+●​ Ecranul de Detalii & "AI Magic"
+1.​ Conținut: Poză mare, Titlu, Descriere inițială, Buton "Rezervă" (link personalizat
+către WhatsApp).
+2.​ Funcția AI Generative: Un buton "Generează Descriere Vibe". De exemplu
+descrierea din JSON e scurtă ("Mâncare bună"). La apăsarea unui buton,
+aplicația apelează un API AI (OpenAI/Gemini/Anthropic) pentru a rescrie
+descrierea locației într-un stil creativ.
+■​ Cerință tehnică: Trebuie să vedem un Loading Indicator și update-ul
+descrierii
+
+3. Nice to Have (Pentru a câștiga Hackathonul)
+După ce baza merge perfect, diferența se face aici. Puteți implementa oricare dintre
+următoarele:
+
+🔐 Login / Contul Meu: Un sistem de autentificare (poate fi Mock, Firebase sau
+Supabase) unde utilizatorul își vede numele și o poză de profil.
+2.​ 🔍 Filtrare & Căutare: O bară de search funcțională sau filtre (ex: "Doar Restaurante",
+"Rating > 4").
+3.​ 🤖 Chatbot AI: Un asistent integrat (fereastră de chat) care răspunde la întrebări despre
+locațiile din aplicație ("Unde pot să beau o cafea bună?").
+4.​ ✨ UI/UX Polish: Animații fluide (Shared Element Transitions), Dark Mode, Error
+1.​
+
+Handling prietenos (ex: când nu ai net).
+
+4. Livrabilul: APK-ul (Eliminatoriu)
+Regula de aur: Dacă Marți 25.11, ora 11:00 nu avem un fișier .apk instalabil încărcat pe
+thecon.ro/hackathon, echipa nu va intra la jurizare, indiferent cât de bun e codul.
+Pe lângă APK, în formularul de upload trebuie să includeți link-ul către Repository-ul de
+GitHub. Vrem să vedem istoricul commit-urilor pentru a valida că s-a lucrat în timpul
+hackathon-ului și contribuția fiecărui membru (în cazul echipelor).
+
+⚠️ Cum să nu ratați deadline-ul (Citiți cu atenție!)
+
+Generarea unui APK poate dura. Nu lăsați build-ul pentru ora 10:55!
+1.​ Varianta Cloud (Expo EAS):
+○​ Este cea mai simplă metodă (eas
+
+build
+
+-p
+
+android
+
+preview), DAR...
+○​ Pe planul Free, puteți sta la coadă (queue) și 30-60 de minute.
+
+--profile
+
+○​ Sfat: Dați un build de test Luni seara sau Marți dimineața devreme (ora 08:00) ca
+să fiți siguri.
+2.​ Varianta Locală:
+○​ Dacă aveți Android Studio configurat, puteți genera APK-ul local (npx expo
+run:android --variant release). E instant, dar necesită environment
+setat corect.
+
+5. Criterii de Jurizare
+Jurizarea se face online. Vom instala APK-ul vostru și vom discuta pe baza lui. Atașăm fișa de
+evaluare pentru transparență:
+
+ETAPA 1: ELIMINATORIE (Pass / Fail)
+Criteriu
+
+Detalii urmărite
+
+Status / Punctaj
+
+APK Funcțional
+
+Fișierul .apk este încărcat până la ora
+11:00 și se instalează corect?
+
+☐ OK / ☐ FAIL
+
+GitHub Repository
+
+Există link valid? Repository-ul este
+setat pe Public?
+
+☐ OK / ☐ FAIL
+
+ETAPA 2: PUNCTAJ TEHNIC (Maxim 100
+Puncte)
+1. AI INTEGRATION (40 Puncte)
+Evaluăm cât de bine stăpâniți uneltele AI
+(Cursor, Claude) și funcțiile AI din app.
+
+Punctaj maxim
+
+Vibe Generator
+
+Funcția "Generează Descriere"
+merge? Textul e creativ/diferit?
+
+15p
+
+UX Asincron
+
+Există Loading Indicator? Interfața nu
+îngheață la request?
+
+10p
+
+Dev Speed (Q&A)
+
+Modul de lucru cu AI-ul: Ați folosit
+prompt-uri complexe, nu doar
+copy-paste simplu?
+
+15p
+
+Core Features
+
+Harta (Pin-uri) și Lista (Feed)
+funcționează perfect? Navigația între
+ecrane este corectă ?
+
+10p
+
+Arhitectură
+
+Cod structurat pe
+Componente/Ecrane (nu un singur
+
+10p
+
+2. CODE QUALITY & COMPLEXITY (40
+Puncte)
+
+fișier). Componente reutilizabile.
+Bonus Major: Implementări complete
+pentru Login, Filtrare, Căutare,
+Chatbot
+
+20p
+
+Visual Polish
+
+Aspect modern (2025). Aliniere
+corectă, imagini scalate bine, fonturi
+lizibile.
+
+10p
+
+Interacțiune
+
+Fluiditate, tranziții între ecrane,
+feedback vizual la apăsarea
+butoanelor.
+
+10p
+
+Nice to Have
+
+3. UI/UX EXPERIENCE (20 Puncte)
+
+TOTAL
+
+
