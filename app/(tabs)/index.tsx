@@ -1,98 +1,198 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
-
-import { HelloWave } from '@/components/hello-wave';
+import { LocationCard } from '@/components/location-card';
 import ParallaxScrollView from '@/components/parallax-scroll-view';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
+import { mockLocations } from '@/data/locations';
+import { useThemeColor } from '@/hooks/use-theme-color';
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 export default function HomeScreen() {
+  const router = useRouter();
+  const tintColor = useThemeColor({}, 'tint');
+  const textColor = useThemeColor({}, 'text');
+  const iconColor = useThemeColor({}, 'icon');
+
+  const featuredLocations = mockLocations
+    .filter(loc => loc.rating >= 4.7)
+    .slice(0, 3);
+
+  const handleExplorePress = () => {
+    router.push('/(tabs)/explore');
+  };
+
+  const handleFavoritesPress = () => {
+    router.push('/(tabs)/profile');
+  };
+
+  const handleLocationPress = (locationId: string) => {
+    router.push({
+      pathname: '/location-details',
+      params: { id: locationId },
+    });
+  };
+
   return (
     <ParallaxScrollView
       headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
       headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
+        <LinearGradient
+          colors={['#A1CEDC', '#0a7ea4']}
+          style={styles.headerGradient}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
         />
       }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
+      <ThemedView style={styles.welcomeContainer}>
+        <ThemedText type="title" style={styles.welcomeTitle}>
+          Descoperă România
+        </ThemedText>
+        <ThemedText style={styles.welcomeSubtitle}>
+          Găsește cele mai bune cafenele și restaurante din țară
         </ThemedText>
       </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
+      <ThemedView style={styles.statsContainer}>
+        <View style={[styles.statCard, { borderColor: `${textColor}15` }]}>
+          <Ionicons name="location" size={32} color={tintColor} />
+          <ThemedText type="defaultSemiBold" style={styles.statNumber}>20+</ThemedText>
+          <ThemedText style={styles.statLabel}>Locații</ThemedText>
+        </View>
+        <View style={[styles.statCard, { borderColor: `${textColor}15` }]}>
+          <Ionicons name="restaurant" size={32} color={tintColor} />
+          <ThemedText type="defaultSemiBold" style={styles.statNumber}>2</ThemedText>
+          <ThemedText style={styles.statLabel}>Categorii</ThemedText>
+        </View>
+        <View style={[styles.statCard, { borderColor: `${textColor}15` }]}>
+          <Ionicons name="map" size={32} color={tintColor} />
+          <ThemedText type="defaultSemiBold" style={styles.statNumber}>13</ThemedText>
+          <ThemedText style={styles.statLabel}>Orașe</ThemedText>
+        </View>
+      </ThemedView>
+
+      <ThemedView style={styles.sectionContainer}>
+        <View style={styles.sectionHeader}>
+          <ThemedText type="subtitle">Locații Recomandate</ThemedText>
+          <Ionicons name="star" size={20} color="#FFB800" />
+        </View>
+        <ThemedText style={[styles.sectionDescription, { color: iconColor }]}>
+          Cele mai bine cotate locuri din selecția noastră
         </ThemedText>
       </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
+
+      {featuredLocations.map((location) => (
+        <LocationCard
+          key={location.id}
+          location={location}
+          onPress={() => handleLocationPress(location.id)}
+        />
+      ))}
+
+      <ThemedView style={styles.ctaContainer}>
+        <Pressable
+          style={[styles.ctaButton, styles.primaryButton, { backgroundColor: tintColor }]}
+          onPress={handleExplorePress}>
+          <Ionicons name="map" size={20} color="#000" />
+          <ThemedText style={styles.ctaButtonText}>Explorează Harta</ThemedText>
+        </Pressable>
+        
+        <Pressable
+          style={[styles.ctaButton, styles.secondaryButton, { borderColor: tintColor }]}
+          onPress={handleFavoritesPress}>
+          <Ionicons name="heart" size={20} color={tintColor} />
+          <ThemedText style={[styles.ctaButtonSecondaryText, { color: tintColor }]}>
+            Vezi Favorite
+          </ThemedText>
+        </Pressable>
       </ThemedView>
     </ParallaxScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
+  headerGradient: {
+    width: '100%',
+    height: '100%',
+  },
+  welcomeContainer: {
+    gap: 8,
+    marginBottom: 24,
+    alignItems: 'center',
+  },
+  welcomeTitle: {
+    textAlign: 'center',
+  },
+  welcomeSubtitle: {
+    fontSize: 16,
+    textAlign: 'center',
+    opacity: 0.8,
+  },
+  statsContainer: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 32,
+  },
+  statCard: {
+    flex: 1,
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    gap: 4,
+  },
+  statNumber: {
+    fontSize: 20,
+    marginTop: 4,
+  },
+  statLabel: {
+    fontSize: 12,
+    opacity: 0.7,
+  },
+  sectionContainer: {
+    gap: 4,
+    marginBottom: 16,
+  },
+  sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+  sectionDescription: {
+    fontSize: 14,
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  ctaContainer: {
+    gap: 12,
+    marginTop: 24,
+    marginBottom: 100,
+  },
+  ctaButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    gap: 8,
+  },
+  primaryButton: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  secondaryButton: {
+    borderWidth: 2,
+  },
+  ctaButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#000',
+  },
+  ctaButtonSecondaryText: {
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

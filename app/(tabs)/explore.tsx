@@ -386,6 +386,7 @@ const styles = StyleSheet.create({
   },
   list: {
     paddingVertical: 8,
+    paddingBottom: 100,
   },
   modalOverlay: {
     flex: 1,
