@@ -4,6 +4,7 @@ import type { Location } from '@/types/location';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { Pressable, StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { ThemedText } from './themed-text';
 
 interface LocationCardProps {
@@ -12,9 +13,10 @@ interface LocationCardProps {
   distance?: number | null;
   variant?: 'default' | 'compact';
   style?: StyleProp<ViewStyle>;
+  index?: number;
 }
 
-export function LocationCard({ location, onPress, distance, variant = 'default', style }: LocationCardProps) {
+export function LocationCard({ location, onPress, distance, variant = 'default', style, index = 0 }: LocationCardProps) {
   const cardBg = useThemeColor({}, 'background');
   const { isFavorite, toggleFavorite } = useFavorites();
   const favorite = isFavorite(location.id);
@@ -27,16 +29,21 @@ export function LocationCard({ location, onPress, distance, variant = 'default',
   };
 
   return (
-    <Pressable
-      style={({ pressed }) => [
+    <Animated.View
+      entering={FadeInDown.delay(index * 100).springify()}
+      style={[
         styles.card,
         isCompact && styles.cardCompact,
         { backgroundColor: cardBg, shadowColor: '#000' },
         style,
-        pressed && styles.pressed,
       ]}
-      onPress={onPress}
     >
+      <Pressable
+        style={({ pressed }) => [
+          { transform: pressed ? [{ scale: 0.97 }] : [{ scale: 1 }] }
+        ]}
+        onPress={onPress}
+      >
       <View style={styles.imageContainer}>
         <Image
           source={{ uri: location.imageUrl }}
@@ -88,7 +95,8 @@ export function LocationCard({ location, onPress, distance, variant = 'default',
           </ThemedText>
         </View>
       </View>
-    </Pressable>
+      </Pressable>
+    </Animated.View>
   );
 }
 
@@ -110,7 +118,7 @@ const styles = StyleSheet.create({
     maxWidth: '48%',
   },
   pressed: {
-    transform: [{ scale: 0.98 }],
+    // transform: [{ scale: 0.98 }], // Handled by reanimated
   },
   imageContainer: {
     position: 'relative',

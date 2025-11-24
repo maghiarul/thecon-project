@@ -1,6 +1,7 @@
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { mockLocations } from '@/data/locations';
+import { useAuth } from '@/hooks/use-auth';
 import { useFavorites } from '@/hooks/use-favorites';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { generateVibeDescription } from '@/services/ai-service';
@@ -11,6 +12,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import Animated, { SlideInDown } from 'react-native-reanimated';
 
 export default function LocationDetailsScreen() {
   const params = useLocalSearchParams<{ locationId: string }>();
@@ -18,6 +20,7 @@ export default function LocationDetailsScreen() {
   const [currentDescription, setCurrentDescription] = useState<string>('');
   const [isGenerating, setIsGenerating] = useState(false);
   const { isFavorite, toggleFavorite } = useFavorites();
+  const { user } = useAuth();
   
   const backgroundColor = useThemeColor({}, 'background');
   const tintColor = useThemeColor({}, 'tint');
@@ -56,6 +59,8 @@ export default function LocationDetailsScreen() {
       await openWhatsAppChat({
         locationName: location.name,
         address: location.address,
+        userId: user?.id,
+        locationId: location.id,
       });
     } catch (error) {
       Alert.alert(
@@ -96,7 +101,7 @@ export default function LocationDetailsScreen() {
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        <View style={styles.content}>
+        <Animated.View entering={SlideInDown.duration(500).springify()} style={styles.content}>
           <View style={styles.header}>
             <View style={styles.titleRow}>
               <ThemedText type="title" style={styles.title}>
@@ -172,7 +177,7 @@ export default function LocationDetailsScreen() {
               </>
             )}
           </Pressable>
-        </View>
+        </Animated.View>
       </ScrollView>
 
       <View style={[styles.footer, { backgroundColor, borderTopColor: `${borderColor}10` }]}>
@@ -196,7 +201,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   imageContainer: {
-    height: 300,
+    height: 250,
     width: '100%',
     position: 'relative',
   },
@@ -213,7 +218,7 @@ const styles = StyleSheet.create({
   },
   topButtons: {
     position: 'absolute',
-    top: 20,
+    top: 12,
     right: 20,
     zIndex: 10,
   },
@@ -235,7 +240,6 @@ const styles = StyleSheet.create({
     marginTop: -20,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    backgroundColor: 'inherit', // Will inherit from ThemedView container if set, but here we rely on the view below
   },
   header: {
     marginBottom: 24,

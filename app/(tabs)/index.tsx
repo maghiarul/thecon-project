@@ -8,6 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import Animated, { FadeIn, FadeInLeft, FadeInRight } from 'react-native-reanimated';
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -30,7 +31,7 @@ export default function HomeScreen() {
   const handleLocationPress = (locationId: string) => {
     router.push({
       pathname: '/location-details',
-      params: { id: locationId },
+      params: { locationId },
     });
   };
 
@@ -46,16 +47,18 @@ export default function HomeScreen() {
           locations={[0, 1]}
         />
       }>
-      <ThemedView style={styles.welcomeContainer}>
-        <ThemedText type="title" style={styles.welcomeTitle}>
-          Descoperă România
-        </ThemedText>
-        <ThemedText style={styles.welcomeSubtitle}>
-          Găsește cele mai bune cafenele și restaurante din țară
-        </ThemedText>
-      </ThemedView>
+      <Animated.View entering={FadeIn.duration(800).delay(200)}>
+        <ThemedView style={styles.welcomeContainer}>
+          <ThemedText type="title" style={styles.welcomeTitle}>
+            Descoperă România
+          </ThemedText>
+          <ThemedText style={styles.welcomeSubtitle}>
+            Găsește cele mai bune cafenele și restaurante din țară
+          </ThemedText>
+        </ThemedView>
+      </Animated.View>
 
-      <ThemedView style={styles.statsContainer}>
+      <Animated.View entering={FadeInLeft.duration(600).delay(400)} style={styles.statsContainer}>
         <View style={[styles.statCard, { borderColor: `${textColor}15` }]}>
           <Ionicons name="location" size={32} color={tintColor} />
           <ThemedText type="defaultSemiBold" style={styles.statNumber}>20+</ThemedText>
@@ -64,42 +67,46 @@ export default function HomeScreen() {
         <View style={[styles.statCard, { borderColor: `${textColor}15` }]}>
           <Ionicons name="restaurant" size={32} color={tintColor} />
           <ThemedText type="defaultSemiBold" style={styles.statNumber}>2</ThemedText>
-          <ThemedText style={styles.statLabel}>Categorii</ThemedText>
+          <ThemedText style={styles.statLabel} numberOfLines={1}>Categorii</ThemedText>
         </View>
         <View style={[styles.statCard, { borderColor: `${textColor}15` }]}>
           <Ionicons name="map" size={32} color={tintColor} />
           <ThemedText type="defaultSemiBold" style={styles.statNumber}>13</ThemedText>
           <ThemedText style={styles.statLabel}>Orașe</ThemedText>
         </View>
-      </ThemedView>
+      </Animated.View>
 
-      <ThemedView style={styles.sectionContainer}>
-        <View style={styles.sectionHeader}>
-          <ThemedText type="subtitle">Locații Recomandate</ThemedText>
-          <Ionicons name="star" size={20} color="#FFB800" />
-        </View>
-        <ThemedText style={[styles.sectionDescription, { color: iconColor }]}>
-          Cele mai bine cotate locuri din selecția noastră
-        </ThemedText>
-      </ThemedView>
+      <Animated.View entering={FadeIn.duration(600).delay(600)}>
+        <ThemedView style={styles.sectionContainer}>
+          <View style={styles.sectionHeader}>
+            <ThemedText type="subtitle">Locații Recomandate</ThemedText>
+            <Ionicons name="star" size={20} color="#FFB800" />
+          </View>
+          <ThemedText style={[styles.sectionDescription, { color: iconColor }]}>
+            Cele mai bine cotate locuri din selecția noastră
+          </ThemedText>
+        </ThemedView>
+      </Animated.View>
 
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.cardsScroll}
       >
-        {featuredLocations.map((location) => (
-          <LocationCard
-            key={location.id}
-            location={location}
-            onPress={() => handleLocationPress(location.id)}
-            variant="compact"
-            style={{ width: 160, marginRight: 12, minWidth: 0, maxWidth: '100%' }}
-          />
+        {featuredLocations.map((location, index) => (
+          <View key={location.id}>
+            <LocationCard
+              location={location}
+              onPress={() => handleLocationPress(location.id)}
+              variant="compact"
+              style={{ width: 160, marginRight: 12, minWidth: 0, maxWidth: '100%' }}
+              index={index}
+            />
+          </View>
         ))}
       </ScrollView>
 
-      <ThemedView style={styles.ctaContainer}>
+      <Animated.View entering={FadeInRight.duration(600).delay(800)} style={styles.ctaContainer}>
         <Pressable
           style={[styles.ctaButton, styles.primaryButton, { backgroundColor: tintColor }]}
           onPress={handleExplorePress}>
@@ -115,7 +122,7 @@ export default function HomeScreen() {
             Vezi Favorite
           </ThemedText>
         </Pressable>
-      </ThemedView>
+      </Animated.View>
     </ParallaxScrollView>
   );
 }
@@ -146,7 +153,7 @@ const styles = StyleSheet.create({
   statCard: {
     flex: 1,
     alignItems: 'center',
-    padding: 16,
+    padding: 12,
     borderRadius: 16,
     borderWidth: 1,
     gap: 4,
@@ -156,8 +163,9 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   statLabel: {
-    fontSize: 12,
+    fontSize: 11,
     opacity: 0.7,
+    textAlign: 'center',
   },
   sectionContainer: {
     gap: 4,

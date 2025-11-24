@@ -22,7 +22,7 @@ export default function TabLayout() {
           bottom: 25,
           left: 20,
           right: 20,
-          elevation: 8,
+          elevation: 0,
           backgroundColor: colorScheme === 'dark' ? '#1c1c1e' : '#ffffff',
           borderRadius: 25,
           height: 70,
@@ -36,9 +36,10 @@ export default function TabLayout() {
           },
           shadowOpacity: 0.15,
           shadowRadius: 20,
+          zIndex: 1,
           ...Platform.select({
             android: {
-              elevation: 10,
+              elevation: 1,
             },
           }),
         },

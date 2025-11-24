@@ -1,4 +1,6 @@
-import { createContext, ReactNode, useContext, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { createContext, ReactNode, useContext, useEffect, useState } from 'react';
+import { useAuth } from './use-auth';
 
 interface FavoritesContextType {
   favorites: string[];
@@ -10,13 +12,41 @@ const FavoritesContext = createContext<FavoritesContextType | undefined>(undefin
 
 export function FavoritesProvider({ children }: { children: ReactNode }) {
   const [favorites, setFavorites] = useState<string[]>([]);
+  const { user } = useAuth();
+
+  useEffect(() => {
+    loadFavorites();
+  }, [user]);
+
+  const loadFavorites = async () => {
+    try {
+      const key = user ? `favorites_${user.id}` : 'favorites_guest';
+      const stored = await AsyncStorage.getItem(key);
+      if (stored) {
+        setFavorites(JSON.parse(stored));
+      }
+    } catch (error) {
+      console.error('Failed to load favorites:', error);
+    }
+  };
+
+  const saveFavorites = async (newFavorites: string[]) => {
+    try {
+      const key = user ? `favorites_${user.id}` : 'favorites_guest';
+      await AsyncStorage.setItem(key, JSON.stringify(newFavorites));
+    } catch (error) {
+      console.error('Failed to save favorites:', error);
+    }
+  };
 
   const toggleFavorite = (locationId: string) => {
-    setFavorites(prev => 
-      prev.includes(locationId)
+    setFavorites(prev => {
+      const newFavorites = prev.includes(locationId)
         ? prev.filter(id => id !== locationId)
-        : [...prev, locationId]
-    );
+        : [...prev, locationId];
+      saveFavorites(newFavorites);
+      return newFavorites;
+    });
   };
 
   const isFavorite = (locationId: string) => {

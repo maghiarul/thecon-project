@@ -1,3 +1,4 @@
+import { LocationBottomSheet } from '@/components/location-bottom-sheet';
 import { LocationCard } from '@/components/location-card';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -5,11 +6,13 @@ import { mockLocations } from '@/data/locations';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import type { Location } from '@/types/location';
 import { Ionicons } from '@expo/vector-icons';
+import BottomSheet from '@gorhom/bottom-sheet';
 import * as ExpoLocation from 'expo-location';
 import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Alert, FlatList, Keyboard, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps';
+import Animated, { FadeInDown, FadeInRight, ZoomIn } from 'react-native-reanimated';
 
 type ViewMode = 'map' | 'list';
 type FilterType = 'all' | 'cafe' | 'restaurant';
@@ -20,7 +23,10 @@ export default function ExploreScreen() {
   const [filterType, setFilterType] = useState<FilterType>('all');
   const [showSearchResults, setShowSearchResults] = useState(false);
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
+  const [isBottomSheetOpen, setIsBottomSheetOpen] = useState(false);
   const mapRef = useRef<MapView>(null);
+  const bottomSheetRef = useRef<BottomSheet>(null);
   const router = useRouter();
   const backgroundColor = useThemeColor({}, 'background');
   const tintColor = useThemeColor({}, 'tint');
@@ -79,10 +85,22 @@ export default function ExploreScreen() {
     return R * c;
   };
 
+  const normalizeText = (text: string): string => {
+    return text
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9\s]/g, '');
+  };
+
   const filteredLocations = mockLocations
     .filter((location) => {
-      const matchesSearch = location.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                           location.address.toLowerCase().includes(searchQuery.toLowerCase());
+      const normalizedQuery = normalizeText(searchQuery);
+      const normalizedName = normalizeText(location.name);
+      const normalizedAddress = normalizeText(location.address);
+      
+      const matchesSearch = normalizedName.includes(normalizedQuery) ||
+                           normalizedAddress.includes(normalizedQuery);
       const matchesFilter = filterType === 'all' || location.type === filterType;
       return matchesSearch && matchesFilter;
     })
@@ -105,10 +123,9 @@ export default function ExploreScreen() {
     });
 
   const handleLocationPress = (location: Location) => {
-    router.push({
-      pathname: '/location-details',
-      params: { locationId: location.id },
-    });
+    setSelectedLocation(location);
+    setIsBottomSheetOpen(true);
+    bottomSheetRef.current?.snapToIndex(0);
   };
 
   const toggleViewMode = () => {
@@ -123,19 +140,26 @@ export default function ExploreScreen() {
   };
 
   const handleSearchFocus = () => {
-    if (searchQuery.length > 0) {
-      setShowSearchResults(true);
-    }
+    setShowSearchResults(true);
   };
 
   const handleSearchChange = (text: string) => {
     setSearchQuery(text);
-    setShowSearchResults(text.length > 0);
+    setShowSearchResults(true);
+  };
+
+  const handleMapPress = () => {
+    setShowSearchResults(false);
+    Keyboard.dismiss();
+    if (isBottomSheetOpen) {
+      bottomSheetRef.current?.close();
+      setIsBottomSheetOpen(false);
+    }
   };
 
   return (
     <ThemedView style={styles.container}>
-      <View style={[styles.headerContainer, { backgroundColor }]}>
+      <Animated.View entering={FadeInDown.duration(500)} style={[styles.headerContainer, { backgroundColor }]}>
         <View style={[styles.searchBar, { backgroundColor: `${borderColor}08`, borderColor: `${borderColor}15` }]}>
           <Ionicons name="search" size={20} color={`${borderColor}60`} />
           <TextInput
@@ -162,37 +186,46 @@ export default function ExploreScreen() {
             { value: 'all', label: 'Toate', icon: 'apps' },
             { value: 'cafe', label: 'Cafenele', icon: 'cafe' },
             { value: 'restaurant', label: 'Restaurante', icon: 'restaurant' },
-          ].map((filter) => (
-            <Pressable
+          ].map((filter, index) => (
+            <Animated.View
+              entering={FadeInRight.delay(index * 100).springify()}
               key={filter.value}
-              style={[
-                styles.filterChip,
-                filterType === filter.value 
-                  ? { backgroundColor: tintColor, borderColor: tintColor } 
-                  : { backgroundColor: 'transparent', borderColor: `${borderColor}20` }
-              ]}
-              onPress={() => setFilterType(filter.value as FilterType)}
             >
-              <Ionicons 
-                name={filter.icon as any} 
-                size={16} 
-                color={filterType === filter.value ? '#fff' : borderColor} 
-              />
-              <ThemedText 
+              <Pressable
                 style={[
-                  styles.filterLabel, 
-                  { color: filterType === filter.value ? '#fff' : borderColor }
+                  styles.filterChip,
+                  filterType === filter.value 
+                    ? { backgroundColor: tintColor, borderColor: tintColor } 
+                    : { backgroundColor: 'transparent', borderColor: `${borderColor}20` }
                 ]}
+                onPress={() => setFilterType(filter.value as FilterType)}
               >
-                {filter.label}
-              </ThemedText>
-            </Pressable>
+                <Ionicons 
+                  name={filter.icon as any} 
+                  size={16} 
+                  color={filterType === filter.value ? '#000' : borderColor} 
+                />
+                <ThemedText 
+                  style={[
+                    styles.filterLabel, 
+                    { color: filterType === filter.value ? '#000' : borderColor }
+                  ]}
+                >
+                  {filter.label}
+                </ThemedText>
+              </Pressable>
+            </Animated.View>
           ))}
         </ScrollView>
-      </View>
+      </Animated.View>
 
-      {showSearchResults && searchQuery.length > 0 && filteredLocations.length > 0 && (
+      {showSearchResults && filteredLocations.length > 0 && (
         <View style={[styles.searchResults, { backgroundColor, borderColor: `${borderColor}20` }]}>
+          {searchQuery.length === 0 && (
+            <View style={styles.suggestionsHeader}>
+              <ThemedText style={styles.suggestionsTitle}>Sugestii</ThemedText>
+            </View>
+          )}
           <FlatList
             data={filteredLocations.slice(0, 5)}
             keyExtractor={(item) => item.id}
@@ -233,19 +266,21 @@ export default function ExploreScreen() {
 
       {viewMode === 'map' ? (
         <>
-          <MapView
-            ref={mapRef}
-            provider={PROVIDER_DEFAULT}
-            style={styles.map}
-            initialRegion={{
-              latitude: userLocation?.latitude || 45.4353,
-              longitude: userLocation?.longitude || 28.0080,
-              latitudeDelta: 0.01,
-              longitudeDelta: 0.01,
-            }}
-            showsUserLocation={true}
-            showsMyLocationButton={true}
-          >
+          <Pressable style={styles.mapWrapper} onPress={handleMapPress}>
+            <MapView
+              ref={mapRef}
+              provider={PROVIDER_DEFAULT}
+              style={styles.map}
+              initialRegion={{
+                latitude: userLocation?.latitude || 45.4353,
+                longitude: userLocation?.longitude || 28.0080,
+                latitudeDelta: 0.01,
+                longitudeDelta: 0.01,
+              }}
+              showsUserLocation={true}
+              showsMyLocationButton={false}
+              onPress={handleMapPress}
+            >
             {filteredLocations.map((location) => (
               <Marker
                 key={location.id}
@@ -255,72 +290,110 @@ export default function ExploreScreen() {
               />
             ))}
           </MapView>
-          
-          <Pressable
-            style={({ pressed }) => [
-              styles.toggleButton,
-              { 
-                backgroundColor: tintColor,
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.3,
-                shadowRadius: 8,
-                elevation: 6,
-              },
-              pressed && styles.togglePressed,
-            ]}
-            onPress={toggleViewMode}
-          >
-            <Ionicons
-              name="list"
-              size={24}
-              color="#fff"
-            />
           </Pressable>
+          
+          <Animated.View entering={ZoomIn.springify()} style={styles.locationButtonContainer}>
+            <Pressable
+              style={({ pressed }) => [
+                styles.locationButton,
+                { 
+                  backgroundColor: tintColor,
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.3,
+                  shadowRadius: 8,
+                  elevation: 6,
+                },
+                pressed && styles.buttonPressed,
+              ]}
+              onPress={requestLocationPermission}
+            >
+              <Ionicons
+                name="navigate"
+                size={24}
+                color="#000"
+              />
+            </Pressable>
+          </Animated.View>
+          
+          <Animated.View entering={ZoomIn.springify()} style={styles.toggleButtonContainer}>
+            <Pressable
+              style={({ pressed }) => [
+                styles.toggleButton,
+                { 
+                  backgroundColor: tintColor,
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.3,
+                  shadowRadius: 8,
+                  elevation: 6,
+                },
+                pressed && styles.togglePressed,
+              ]}
+              onPress={toggleViewMode}
+            >
+              <Ionicons
+                name="list"
+                size={24}
+                color="#000"
+              />
+            </Pressable>
+          </Animated.View>
         </>
       ) : (
         <>
-          <FlatList
-            data={filteredLocations}
-            keyExtractor={(item) => item.id}
-            numColumns={2}
-            columnWrapperStyle={styles.listColumnWrapper}
-            key="grid-2"
-            renderItem={({ item }) => (
-              <LocationCard
-                location={item}
-                onPress={() => handleLocationPress(item)}
-                distance={item.distance}
-                variant="compact"
-              />
-            )}
-            contentContainerStyle={styles.list}
-            showsVerticalScrollIndicator={false}
-          />
-          
-          <Pressable
-            style={({ pressed }) => [
-              styles.toggleButton,
-              { 
-                backgroundColor: tintColor,
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.3,
-                shadowRadius: 8,
-                elevation: 6,
-              },
-              pressed && styles.togglePressed,
-            ]}
-            onPress={toggleViewMode}
-          >
-            <Ionicons
-              name="map"
-              size={24}
-              color="#fff"
+          <Pressable style={styles.listWrapper} onPress={handleMapPress}>
+            <FlatList
+              data={filteredLocations}
+              keyExtractor={(item) => item.id}
+              numColumns={2}
+              columnWrapperStyle={styles.listColumnWrapper}
+              key="grid-2"
+              renderItem={({ item }) => (
+                <LocationCard
+                  location={item}
+                  onPress={() => handleLocationPress(item)}
+                  distance={item.distance}
+                  variant="compact"
+                />
+              )}
+              contentContainerStyle={styles.list}
+              showsVerticalScrollIndicator={false}
+              scrollEnabled={!showSearchResults}
             />
           </Pressable>
+          
+          <Animated.View entering={ZoomIn.springify()} style={styles.toggleButtonContainer}>
+            <Pressable
+              style={({ pressed }) => [
+                styles.toggleButton,
+                { 
+                  backgroundColor: tintColor,
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.3,
+                  shadowRadius: 8,
+                  elevation: 6,
+                },
+                pressed && styles.togglePressed,
+              ]}
+              onPress={toggleViewMode}
+            >
+              <Ionicons
+                name="map"
+                size={24}
+                color="#000"
+              />
+            </Pressable>
+          </Animated.View>
         </>
       )}
+
+      <LocationBottomSheet 
+        ref={bottomSheetRef} 
+        location={selectedLocation}
+        onSheetChange={setIsBottomSheetOpen}
+      />
     </ThemedView>
   );
 }
@@ -332,7 +405,7 @@ const styles = StyleSheet.create({
   headerContainer: {
     paddingTop: 60,
     paddingBottom: 12,
-    zIndex: 1,
+    zIndex: 2,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(0,0,0,0.05)',
   },
@@ -370,22 +443,47 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
-  toggleButton: {
+  toggleButtonContainer: {
     position: 'absolute',
     bottom: 110,
     right: 20,
+    zIndex: 5,
+  },
+  toggleButton: {
     width: 56,
     height: 56,
     borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
-    zIndex: 10,
   },
   togglePressed: {
     opacity: 0.9,
     transform: [{ scale: 0.95 }],
   },
+  locationButtonContainer: {
+    position: 'absolute',
+    bottom: 180,
+    right: 20,
+    zIndex: 5,
+  },
+  locationButton: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  buttonPressed: {
+    opacity: 0.9,
+    transform: [{ scale: 0.95 }],
+  },
+  mapWrapper: {
+    flex: 1,
+  },
   map: {
+    flex: 1,
+  },
+  listWrapper: {
     flex: 1,
   },
   list: {
@@ -409,7 +507,18 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 12,
     elevation: 5,
-    zIndex: 100,
+    zIndex: 50,
+  },
+  suggestionsHeader: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 8,
+  },
+  suggestionsTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    opacity: 0.5,
+    textTransform: 'uppercase',
   },
   searchResultItem: {
     flexDirection: 'row',

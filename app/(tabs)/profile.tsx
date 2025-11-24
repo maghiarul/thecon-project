@@ -1,13 +1,19 @@
 import { LocationCard } from '@/components/location-card';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { Toast } from '@/components/toast';
 import { mockLocations } from '@/data/locations';
+import { useAuth } from '@/hooks/use-auth';
 import { useFavorites } from '@/hooks/use-favorites';
 import { useThemeColor } from '@/hooks/use-theme-color';
+import { getReservations, type Reservation } from '@/utils/whatsapp-linking';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Image } from 'expo-image';
+import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
+import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 export default function ProfileScreen() {
@@ -15,12 +21,81 @@ export default function ProfileScreen() {
   const borderColor = useThemeColor({}, 'text');
   const tintColor = useThemeColor({}, 'tint');
   const { favorites } = useFavorites();
+  const { user, signOut } = useAuth();
   const router = useRouter();
+  const [toast, setToast] = useState<{ visible: boolean; message: string; type: 'success' | 'error' | 'info' }>({ visible: false, message: '', type: 'info' });
+  const [reservationsCount, setReservationsCount] = useState(0);
+  const [reservations, setReservations] = useState<Reservation[]>([]);
 
   const favoriteLocations = mockLocations.filter(loc => favorites.includes(loc.id));
 
+  useEffect(() => {
+    loadReservationsCount();
+  }, [user]);
+
+  const loadReservationsCount = async () => {
+    try {
+      const key = user ? `reservations_${user.id}` : 'reservations_guest';
+      
+      // Clear old numeric format if exists
+      const stored = await AsyncStorage.getItem(key);
+      if (stored && !stored.startsWith('[')) {
+        await AsyncStorage.removeItem(key);
+      }
+      
+      const userReservations = await getReservations(user?.id);
+      setReservations(userReservations);
+      setReservationsCount(userReservations.length);
+    } catch (error) {
+      console.error('Failed to load reservations:', error);
+      setReservations([]);
+      setReservationsCount(0);
+    }
+  };
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      setToast({ visible: true, message: 'Deconectat cu succes', type: 'success' });
+      setTimeout(() => router.replace('/auth'), 1500);
+    } catch (error) {
+      setToast({ visible: true, message: 'Nu s-a putut efectua deconectarea', type: 'error' });
+    }
+  };
+
+  const handleChangeAvatar = async () => {
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      
+      if (status !== 'granted') {
+        setToast({ visible: true, message: 'Permisiune necesară pentru galerie', type: 'error' });
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled) {
+        setToast({ visible: true, message: 'Funcție disponibilă în curând', type: 'info' });
+      }
+    } catch (error) {
+      setToast({ visible: true, message: 'Nu s-a putut selecta imaginea', type: 'error' });
+    }
+  };
+
   return (
     <ThemedView style={styles.container}>
+      <Toast
+        visible={toast.visible}
+        message={toast.message}
+        type={toast.type}
+        onHide={() => setToast({ ...toast, visible: false })}
+      />
+      
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.headerContainer}>
           <LinearGradient
@@ -31,21 +106,21 @@ export default function ProfileScreen() {
             locations={[0, 1]}
           />
           <View style={styles.headerContent}>
-            <View style={styles.avatarContainer}>
+            <Pressable style={styles.avatarContainer} onPress={handleChangeAvatar}>
               <Image
-                source={{ uri: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400' }}
+                source={{ uri: user?.user_metadata?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.user_metadata?.full_name || 'User')}&background=0a7ea4&color=fff` }}
                 style={styles.avatar}
                 contentFit="cover"
               />
               <View style={styles.editBadge}>
                 <Ionicons name="pencil" size={12} color="#fff" />
               </View>
-            </View>
+            </Pressable>
             <ThemedText type="title" style={styles.name}>
-              Alex Popescu
+              {user?.user_metadata?.full_name || 'Utilizator'}
             </ThemedText>
             <ThemedText style={styles.email}>
-              alex.popescu@example.com
+              {user?.email || 'email@example.com'}
             </ThemedText>
             
             <View style={styles.statsRow}>
@@ -55,13 +130,8 @@ export default function ProfileScreen() {
               </View>
               <View style={styles.statDivider} />
               <View style={styles.statItem}>
-                <ThemedText type="defaultSemiBold" style={styles.statNumber}>0</ThemedText>
+                <ThemedText type="defaultSemiBold" style={styles.statNumber}>{reservationsCount}</ThemedText>
                 <ThemedText style={styles.statLabel}>Rezervări</ThemedText>
-              </View>
-              <View style={styles.statDivider} />
-              <View style={styles.statItem}>
-                <ThemedText type="defaultSemiBold" style={styles.statNumber}>0</ThemedText>
-                <ThemedText style={styles.statLabel}>Recenzii</ThemedText>
               </View>
             </View>
           </View>
@@ -108,15 +178,60 @@ export default function ProfileScreen() {
             <ThemedText type="subtitle">Istoric Rezervări</ThemedText>
           </View>
           
-          <View style={[styles.emptyState, { borderColor: `${borderColor}20` }]}>
-            <Ionicons name="calendar-outline" size={48} color={`${borderColor}40`} />
-            <ThemedText style={styles.emptyText}>
-              Nicio rezervare încă
+          {reservations.length > 0 ? (
+            <View style={styles.reservationsList}>
+              {reservations.slice(0, 5).reverse().map((reservation, index) => {
+                const reservationLocation = mockLocations.find(loc => loc.id === reservation.locationId);
+                return (
+                  <Pressable
+                    key={`${reservation.locationId}-${reservation.timestamp}`}
+                    style={[styles.reservationItem, { backgroundColor: cardBg, borderColor: `${borderColor}10` }]}
+                    onPress={() => reservationLocation && router.push({
+                      pathname: '/location-details',
+                      params: { locationId: reservationLocation.id }
+                    })}
+                  >
+                    <View style={[styles.reservationIcon, { backgroundColor: `${tintColor}15` }]}>
+                      <Ionicons name="calendar" size={20} color={tintColor} />
+                    </View>
+                    <View style={styles.reservationInfo}>
+                      <ThemedText style={styles.reservationName} numberOfLines={1}>
+                        {reservation.locationName}
+                      </ThemedText>
+                      <ThemedText style={styles.reservationDate}>
+                        {new Date(reservation.timestamp).toLocaleDateString('ro-RO', {
+                          day: 'numeric',
+                          month: 'long',
+                          year: 'numeric'
+                        })}
+                      </ThemedText>
+                    </View>
+                    <Ionicons name="chevron-forward" size={20} color={`${borderColor}40`} />
+                  </Pressable>
+                );
+              })}
+            </View>
+          ) : (
+            <View style={[styles.emptyState, { borderColor: `${borderColor}20` }]}>
+              <Ionicons name="calendar-outline" size={48} color={`${borderColor}40`} />
+              <ThemedText style={styles.emptyText}>
+                Nicio rezervare încă
+              </ThemedText>
+              <ThemedText style={styles.emptySubtext}>
+                Rezervările tale vor apărea aici după ce contactezi locațiile.
+              </ThemedText>
+            </View>
+          )}
+
+          <Pressable
+            style={[styles.signOutButton, { borderColor: '#FF3B30' }]}
+            onPress={handleSignOut}
+          >
+            <Ionicons name="log-out-outline" size={20} color="#FF3B30" />
+            <ThemedText style={[styles.signOutText, { color: '#FF3B30' }]}>
+              Deconectare
             </ThemedText>
-            <ThemedText style={styles.emptySubtext}>
-              Rezervările tale vor apărea aici după ce contactezi locațiile.
-            </ThemedText>
-          </View>
+          </Pressable>
         </View>
       </ScrollView>
     </ThemedView>
@@ -246,5 +361,50 @@ const styles = StyleSheet.create({
     opacity: 0.5,
     marginTop: 4,
     textAlign: 'center',
+  },
+  signOutButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginTop: 32,
+  },
+  signOutText: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  reservationsList: {
+    gap: 12,
+    marginBottom: 20,
+  },
+  reservationItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    gap: 12,
+  },
+  reservationIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  reservationInfo: {
+    flex: 1,
+  },
+  reservationName: {
+    fontSize: 15,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  reservationDate: {
+    fontSize: 13,
+    opacity: 0.6,
   },
 });
