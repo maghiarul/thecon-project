@@ -57,8 +57,15 @@ export default function ProfileScreen() {
     try {
       await signOut();
       setToast({ visible: true, message: 'Deconectat cu succes', type: 'success' });
-      setTimeout(() => router.replace('/auth'), 1500);
+      setTimeout(() => {
+        try {
+          router.replace('/auth');
+        } catch (navError) {
+          console.error('Navigation error:', navError);
+        }
+      }, 1500);
     } catch (error) {
+      console.error('Sign out error:', error);
       setToast({ visible: true, message: 'Nu s-a putut efectua deconectarea', type: 'error' });
     }
   };

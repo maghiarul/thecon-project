@@ -115,3 +115,74 @@ export interface AIServiceConfig {
 export function configureAIService(config: AIServiceConfig): void {
   console.log('AI Service configured:', config);
 }
+
+export interface ChatMessage {
+  role: 'system' | 'user' | 'assistant';
+  content: string;
+}
+
+function buildChatSystemPrompt(locations: any[]): string {
+  const locationsContext = locations.map(loc => 
+    `${loc.id}. ${loc.name} - ${loc.type === 'cafe' ? 'Cafenea' : 'Restaurant'} în ${loc.address}. Rating: ${loc.rating}. ${loc.description}`
+  ).join('\n');
+
+  return `Ești un asistent prietenos care ajută utilizatorii să găsească locația perfectă din România.
+
+LOCAȚII DISPONIBILE:
+${locationsContext}
+
+REGULI:
+- Răspunde natural și conversațional în română
+- Pune întrebări pentru a înțelege preferințele (atmosferă, tip mâncare, budget, companie)
+- Recomandă 2-3 locații relevante bazate pe context
+- Când recomanzi, folosește format: **Numele Locației** (bold) urmat de explicație scurtă
+- Fii entuziast dar onest despre opțiuni
+- Poți sugera alternative dacă cererile sunt prea specifice
+- Folosește emoji-uri subtil pentru personalitate
+
+Nu inventa locații care nu sunt în listă. Bazează-te doar pe cele 20 disponibile.`;
+}
+
+export async function* streamChatMessage(
+  messages: ChatMessage[],
+  locations: any[]
+): AsyncGenerator<string, void, unknown> {
+  const systemPrompt = buildChatSystemPrompt(locations);
+  
+  try {
+    const response = await fetch(GROQ_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${GROQ_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: 'llama-3.3-70b-versatile',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          ...messages
+        ],
+        temperature: 1.2,
+        max_tokens: 500,
+        stream: false,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(`API Error: ${response.status} - ${errorData.error?.message || 'Unknown error'}`);
+    }
+
+    const data = await response.json();
+    const content = data.choices[0]?.message?.content || '';
+    
+    const words = content.split(' ');
+    for (const word of words) {
+      yield word + ' ';
+      await new Promise(resolve => setTimeout(resolve, 30));
+    }
+  } catch (error) {
+    console.error('Stream error:', error);
+    throw error;
+  }
+}

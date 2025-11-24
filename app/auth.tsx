@@ -1,6 +1,7 @@
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Toast } from '@/components/toast';
+import { Logo } from '@/components/ui/logo';
 import { useAuth } from '@/hooks/use-auth';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { Ionicons } from '@expo/vector-icons';
@@ -64,15 +65,15 @@ export default function AuthScreen() {
       >
         <View style={styles.content}>
           <View style={styles.header}>
-            <View style={[styles.iconContainer, { backgroundColor: tintColor }]}>
-              <Ionicons name="restaurant" size={48} color="#fff" />
-            </View>
+            <Logo size={120} />
             <ThemedText type="title" style={styles.title}>
-              {isSignUp ? 'Creează Cont' : 'Bun venit'}
+              {isSignUp ? 'Creează Cont' : 'Bun venit la Discover'}
             </ThemedText>
-            <ThemedText style={styles.subtitle}>
-              {isSignUp ? 'Descoperă cele mai bune locații' : 'Continuă experiența'}
-            </ThemedText>
+            {isSignUp && (
+              <ThemedText style={styles.subtitle}>
+                Descoperă cele mai bune locații
+              </ThemedText>
+            )}
           </View>
 
           <View style={styles.form}>
@@ -168,22 +169,10 @@ const styles = StyleSheet.create({
   header: {
     alignItems: 'center',
     marginBottom: 48,
-  },
-  iconContainer: {
-    width: 96,
-    height: 96,
-    borderRadius: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 8,
+    gap: 16,
   },
   title: {
-    marginBottom: 8,
+    textAlign: 'center',
   },
   subtitle: {
     opacity: 0.7,

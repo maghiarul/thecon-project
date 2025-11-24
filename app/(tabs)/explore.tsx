@@ -10,8 +10,8 @@ import BottomSheet from '@gorhom/bottom-sheet';
 import * as ExpoLocation from 'expo-location';
 import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { Alert, FlatList, Keyboard, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
-import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps';
+import { FlatList, Keyboard, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import Animated, { FadeInDown, FadeInRight, ZoomIn } from 'react-native-reanimated';
 
 type ViewMode = 'map' | 'list';
@@ -33,43 +33,44 @@ export default function ExploreScreen() {
   const borderColor = useThemeColor({}, 'text');
 
   useEffect(() => {
-    requestLocationPermission();
+    // Don't request location on mount to prevent crashes
   }, []);
 
   const requestLocationPermission = async () => {
     try {
-      const { status } = await ExpoLocation.requestForegroundPermissionsAsync();
+      const { status: existingStatus } = await ExpoLocation.getForegroundPermissionsAsync();
       
-      if (status === 'granted') {
-        const location = await ExpoLocation.getCurrentPositionAsync({});
-        const coords = {
-          latitude: location.coords.latitude,
-          longitude: location.coords.longitude,
-        };
-        setUserLocation(coords);
-        
-        if (mapRef.current) {
-          mapRef.current.animateToRegion({
-            ...coords,
-            latitudeDelta: 0.01,
-            longitudeDelta: 0.01,
-          }, 1000);
+      let finalStatus = existingStatus;
+      
+      if (existingStatus !== 'granted') {
+        const { status } = await ExpoLocation.requestForegroundPermissionsAsync();
+        finalStatus = status;
+      }
+      
+      if (finalStatus === 'granted') {
+        try {
+          const location = await ExpoLocation.getCurrentPositionAsync({
+            accuracy: ExpoLocation.Accuracy.Low,
+          });
+          const coords = {
+            latitude: location.coords.latitude,
+            longitude: location.coords.longitude,
+          };
+          setUserLocation(coords);
+          
+          if (mapRef.current) {
+            mapRef.current.animateToRegion({
+              ...coords,
+              latitudeDelta: 0.05,
+              longitudeDelta: 0.05,
+            }, 1000);
+          }
+        } catch (locationError) {
+          console.log('Location error:', locationError);
         }
-      } else {
-        Alert.alert(
-          'Acces Locație',
-          'Pentru a vedea distanțele până la locații și pentru o experiență mai bună, activează accesul la locație.',
-          [
-            { text: 'Mai târziu', style: 'cancel' },
-            { 
-              text: 'Setări', 
-              onPress: () => ExpoLocation.requestForegroundPermissionsAsync()
-            }
-          ]
-        );
       }
     } catch (error) {
-      console.error('Error requesting location permission:', error);
+      console.log('Permission error:', error);
     }
   };
 
@@ -269,7 +270,7 @@ export default function ExploreScreen() {
           <Pressable style={styles.mapWrapper} onPress={handleMapPress}>
             <MapView
               ref={mapRef}
-              provider={PROVIDER_DEFAULT}
+              provider={PROVIDER_GOOGLE}
               style={styles.map}
               initialRegion={{
                 latitude: userLocation?.latitude || 45.4353,
