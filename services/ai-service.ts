@@ -1,7 +1,7 @@
 import type { Location } from '@/types/location';
 
 // Folosim Groq (gratuit, foarte rapid) cu Llama 3
-const GROQ_API_KEY = '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';
+const GROQ_API_KEY = process.env.EXPO_PUBLIC_GROQ_API_KEY;
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
 const PERSPECTIVES = [
